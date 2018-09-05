@@ -57,13 +57,13 @@ def async_detect_document_tibetan(args):
     bucket = storage_client.get_bucket(bucket_name=args.bucket)
 
     # List objects with the given prefix.
-    get_file_number = lambda blob: int(re.search(r'(\d+)\.json', blob).group(1))
-    blob_list = sorted([(get_file_number(blob), blob) for blob in bucket.list_blobs(prefix=args.filepath)])
+    get_file_number = lambda name: int(re.search(r'(\d+)\.json', name).group(1))
+    blob_list = sorted([(get_file_number(blob.name), blob) for blob in bucket.list_blobs(prefix=book_name+"/")])
     print('Output files:')
     for _, blob in blob_list:
         print(blob.name)
 
-    output_name = os.path.join(args.output_dir, book_name+".txt")
+    output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 
     print('Collecting all text locally as {}'.format(output_name))
 
