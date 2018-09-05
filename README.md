@@ -6,20 +6,20 @@ If you haven't created a Google Cloud account before, register for a new account
 ## Step 2: Provision Google Cloud resources
 Create a new Google Cloud project from the [cloud resource manager](https://console.cloud.google.com/cloud-resource-manager). More information [here](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
-Create a new Google Cloud bucket from the [storage browser](https://console.cloud.google.com/storage/browser). Make sure the project you just created is selected as in the image below:
+Create a new Google Cloud bucket from the [storage browser](https://console.cloud.google.com/storage/browser). Make sure the project you just created is selected as shown in the image below:
 
-![Storage bucket creation interface][image1]
+![Storage bucket creation interface](image1.png)
 
 Remember the name of your bucket, this will be important later.
 
 ## Step 3: Set up authentication protocol
-A service account is distinguished from the Google Cloud account you created to get free credits. Create a new service account for your newly created Google Cloud project [here](https://console.cloud.google.com/iam-admin/serviceaccounts) by clicking the "+ CREATE SERVICE ACCOUNT" button.
+A service account is distinguished from the Google Cloud account you created to get free credits. Create a new service account for your newly created Google Cloud project [here](https://console.cloud.google.com/iam-admin/serviceaccounts) by clicking the "+ CREATE SERVICE ACCOUNT" button. Again, make sure the correct project is selected.
 
-![Service account creation button][image2]
+![Service account creation button](image2.png)
 
 Name your account, add the "Storage - Storage Admin" role and select the "Furnish a new private key" with a JSON key type. Click "Save" and your key should download. Avoid sharing this key as it provides administrative privileges to your storage buckets on Google Cloud!
 
-![Service account creation details screen][image3]
+![Service account creation details screen](image3.png)
 
 More information on creating a service account found [here](https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating_a_service_account).
 
@@ -50,19 +50,19 @@ Then install the Google Cloud Storage library with:
 ## Step 2: Download the `transcribe.py` script in this repository
 You can either right click the link to `transcribe.py` and hit "Save As" or download the entire repository as a .zip from the "Clone or download" button shown in the image below.
 
-![Download options on Github][image4]
+![Download options on Github](image4.png)
 
 # Part 3: Upload OCR target files and launch script
 
 ## Step 1: Upload desired files to your Google Storage bucket
 Upload a .pdf or .tiff file you wish to transcribe using the web client found [here](https://console.cloud.google.com/storage/browser)
 
-![File upload interface][image5]
+![File upload interface](image5.png)
 
 ## Step 2: Launch script
 Navigate to the directory containing the `transcribe.py` script downloaded earlier and launch script with:
 
-    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME>
+    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME
 
 Where `CLOUD_PATH` is a placeholder and should be replaced with the path to your file within the Google Storage bucket (just the full filename e.g. "book.pdf" if uploaded in the previous step without creating any intermediate directories in the bucket). 
 
@@ -70,11 +70,4 @@ And `BUCKET_NAME` is a placeholder and should be replaced with the full name of 
 
 If your target file is a .tiff instead of a .pdf, simply add the tiff flag like so:
 
-    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME> --tiff
-
-
-[image1]: (image1.png)
-[image2]: (image2.png)
-[image3]: (image3.png)
-[image4]: (image4.png)
-[image5]: (image5.png)
+    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME --tiff
