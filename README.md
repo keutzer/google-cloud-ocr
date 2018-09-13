@@ -31,7 +31,7 @@ From Google's documentation:
 
 `export GOOGLE_APPLICATION_CREDENTIALS=PATH_TO_KEY_FILE`
 
->Replace `PATH_TO_KEY_FILE` with the path to your JSON service account file. `GOOGLE_APPLICATION_CREDENTIALS` should be written out as-is (it's not a placeholder in the example above).
+>Replace `PATH_TO_KEY_FILE` with the path to your JSON service account file (directory and filename). `GOOGLE_APPLICATION_CREDENTIALS` should be written out as-is (it's not a placeholder in the example above).
 
 If you don't know what the path to your key file is and you are using a Mac, `~/Downloads/FILENAME` where `FILENAME` is the full name of the file that downloaded automatically after you created the service account.
 
@@ -62,7 +62,7 @@ Upload a .pdf or .tiff file you wish to transcribe using the web client found [h
 ## Step 2: Launch script
 Navigate to the directory containing the `transcribe.py` script downloaded earlier and launch script with:
 
-    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME
+    python3 transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME
 
 Where `CLOUD_PATH` is a placeholder and should be replaced with the path to your file within the Google Storage bucket (just the full filename e.g. "book.pdf" if uploaded in the previous step without creating any intermediate directories in the bucket). 
 
@@ -70,4 +70,4 @@ And `BUCKET_NAME` is a placeholder and should be replaced with the full name of 
 
 If your target file is a .tiff instead of a .pdf, simply add the tiff flag like so:
 
-    python transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME --tiff
+    python3 transcribe.py --filepath CLOUD_PATH --bucket BUCKET_NAME --tiff
