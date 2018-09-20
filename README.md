@@ -102,3 +102,21 @@ Now we can run the `pdf_to_jpg.py` conversion script on a local .pdf file as fol
     python3 pdf_to_jpg.py --filepath FILE_PATH
 
 As with `transcribe.py` and `transcribe_image.py` above, you can optionally specify an output directory for your .jpg files with `--output-dir OUTPUT_DIR` appended to your command. If an ouput directory is not explicitly specified, the jpg files are by default dumped to the same directory that the .pdf file is found in.
+
+## Appendix B: Convert PDF to JPG (streamlined)
+The process described in appendix A requires running `transcribe_image.py` individually on each page of a book, and outputs many .txt files. Instead, it would be much easier to automate the process of iterating through all images constituting a converted pdf file, running document text detection on each image, and then collecting the output into one file.
+
+We accomplish that with two scripts: `pdf_to_jpg_dir.py`, which converts a pdf file to multiple jpg files and then uploads all the jpg files into a directory in the user-specified Google Cloud Storage bucket, and `transcribe_image_dir.py`, which runs document text detection on all files in a user-specified Google Cloud Storage directory and writes all text output to a single .txt file.
+
+To use the `pdf_to_jpg_dir.py` script:
+
+    python3 pdf_to_jpg_dir.py --filepath FILE_PATH --bucket BUCKET_NAME
+
+where `FILE_PATH` should be replaced by the local path to the pdf file to be converted and `BUCKET_NAME` should be replaced by the GCS bucket name. Finally, we have the option of appending `--output-dir OUTPUT_DIR` with OUTPUT_DIR replaced by the desired name of the Google Cloud Storage output directory storing all the image files.
+
+To use the `transcribe_image_dir.py` script:
+
+    python3 transcribe_image_dir --filepath FILE_PATH --bucket BUCKET_NAME
+
+where `FILE_PATH` should be replaced by the GCS path to the directory containing all image files to be transcribed and `BUCKET_NAME` should be replaced by the GCS bucket name. Optionally, we may also append `--output-dir OUTPUT_DIR` to our command to specify the name of a local output directory to hold our single output .txt file.
+
