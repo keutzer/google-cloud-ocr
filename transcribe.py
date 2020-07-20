@@ -55,7 +55,8 @@ def async_detect_document_tibetan(args):
     # Once the request has completed and the output has been
     # written to GCS, we can list all the output files.
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name=args.bucket)
+       #  CHANGED BY RAVI KRISHNA ON 12/19/19 FROM storage_client.get_bucket(bucket_name=args.bucket) TO JUST storage_client.get_bucket(args.bucket); THE FORMER CURRENTLY CAUSES AN ERROR.
+    bucket = storage_client.get_bucket(args.bucket)
 
     # List objects with the given prefix.
     get_file_number = lambda name: int(re.search(r'(\d+)\.json', name).group(1))
