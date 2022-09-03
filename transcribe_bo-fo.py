@@ -74,7 +74,7 @@ def async_detect_document_tibetan(args):
     # See https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
     with open(output_name, "w", encoding="utf-8") as f:
         # Collect all text from outputs
-        for output in tqdm(blob_list):
+        for _, output in tqdm(blob_list):
             json_string = output.download_as_string()
 
             # For the `._pb`, see https://stackoverflow.com/questions/64403737/attribute-error-descriptor-while-trying-to-convert-google-vision-response-to-dic
