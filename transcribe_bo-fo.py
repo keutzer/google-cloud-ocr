@@ -2,6 +2,8 @@ import argparse
 import os
 import re
 
+from tqdm import tqdm
+
 from google.cloud import storage
 from google.cloud import vision
 from google.protobuf import json_format
@@ -63,9 +65,6 @@ def async_detect_document_tibetan(args):
     # List objects with the given prefix.
     get_file_number = lambda name: int(re.search(r'(\d+)\.json', name).group(1))
     blob_list = sorted([(get_file_number(blob.name), blob) for blob in bucket.list_blobs(prefix=path_book_name+"/")])
-    print('Output files:')
-    for _, blob in blob_list:
-        print(blob.name)
 
     output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 
@@ -75,7 +74,7 @@ def async_detect_document_tibetan(args):
     # See https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
     with open(output_name, "w", encoding="utf-8") as f:
         # Collect all text from outputs
-        for i, output in blob_list:
+        for output in tqdm(blob_list):
             json_string = output.download_as_string()
 
             # For the `._pb`, see https://stackoverflow.com/questions/64403737/attribute-error-descriptor-while-trying-to-convert-google-vision-response-to-dic
@@ -87,14 +86,6 @@ def async_detect_document_tibetan(args):
             annotation = first_page_response.full_text_annotation
 
             f.write(annotation.text)
-
-            if i == 1:
-                # Here we print the full text from the first page.
-                # The response contains more information:
-                # annotation/pages/blocks/paragraphs/words/symbols
-                # including confidence scores and bounding boxes
-                print(u'Full text:\n{}'.format(
-                    annotation.text))
 
 if __name__ == "__main__":
     args = parser.parse_args()

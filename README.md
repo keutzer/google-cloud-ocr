@@ -78,6 +78,14 @@ If your target file is an image file instead of a .tiff or .pdf, use the `transc
 
 In either of these scripts, you can optionally specify an output directory for the .txt file with the `--output-dir OUTPUT_DIR` flag appended to your command, where `OUTPUT_DIR` is replaced with the path to your desired output directory.
 
+## Transcribing Tibentan documents
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials
+
+pip install -r requirements.txt --upgrade
+./transcribe.sh
+```
+
 ## Appendix A: Convert PDF to JPG (locally)
 Currently there are some bugs with Google Cloud Vision's transcribe pdf function that breaks on some pdf files. A current workaround is to convert each page of a problematic pdf to a jpg image file and then run the `transcribe_image.py` script from Step 2.
 
