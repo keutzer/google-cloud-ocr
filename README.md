@@ -120,3 +120,38 @@ To use the `transcribe_image_dir.py` script:
 
 where `FILE_PATH` should be replaced by the GCS path to the directory containing all image files to be transcribed and `BUCKET_NAME` should be replaced by the GCS bucket name. Optionally, we may also append `--output-dir OUTPUT_DIR` to our command to specify the name of a local output directory to hold our single output .txt file.
 
+## Appendix C: FAQ
+
+```
+AttributeError: module 'google.cloud.vision' has no attribute 'types'
+```
+
+Not sure what the root cause of this is, maybe Google changed their cloud vision API after this tutorial was written, but if you encounter this issue, you need to replace all instances of `vision.types` with just `vision` e.g. `vision.types.Feature` -> `vision.Feature`. 
+
+---
+
+```
+AttributeError: Unknown field for AnnotateFileResponse: DESCRIPTOR
+```
+
+Again, not sure what the root cause of this is, maybe Google changed their cloud vision API after this tutorial was written, but if you encounter this issue, you need to replace any calls to
+```
+json_format.Parse(json_string, vision.AnnotateFileResponse())
+```
+with
+```
+json_format.Parse(json_string, vision.AnnotateFileResponse()._pb)
+```
+i.e. make sure to use the `._pb` (protocol buffer) property of a file response.
+
+For more information, see https://stackoverflow.com/questions/64403737/attribute-error-descriptor-while-trying-to-convert-google-vision-response-to-dic
+
+---
+
+```
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-15: character maps to <undefined>
+```
+
+Need to specify the encoding for non-English languages.
+
+For more information, see https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
