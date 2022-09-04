@@ -1,3 +1,4 @@
+# deprecated in favor of transcribe_bo-fo.py
 import argparse
 import os
 import re
