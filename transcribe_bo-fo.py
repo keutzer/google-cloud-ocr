@@ -2,6 +2,8 @@ import argparse
 import os
 import re
 
+from tqdm import tqdm
+
 from google.cloud import storage
 from google.cloud import vision
 from google.protobuf import json_format
@@ -29,21 +31,21 @@ def async_detect_document_tibetan(args):
 
     client = vision.ImageAnnotatorClient()
 
-    feature = vision.types.Feature(
-        type=vision.enums.Feature.Type.DOCUMENT_TEXT_DETECTION,
+    feature = vision.Feature(
+        type=vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
         model="builtin/weekly")
 
-    gcs_source = vision.types.GcsSource(uri=gcs_source_uri)
-    input_config = vision.types.InputConfig(
+    gcs_source = vision.GcsSource(uri=gcs_source_uri)
+    input_config = vision.InputConfig(
         gcs_source=gcs_source, mime_type=mime_type)
 
-    gcs_destination = vision.types.GcsDestination(uri=gcs_destination_uri)
-    output_config = vision.types.OutputConfig(
+    gcs_destination = vision.GcsDestination(uri=gcs_destination_uri)
+    output_config = vision.OutputConfig(
         gcs_destination=gcs_destination, batch_size=batch_size)
 
-    image_context = vision.types.ImageContext(language_hints=["bo"])
+    image_context = vision.ImageContext(language_hints=["bo"])
 
-    async_request = vision.types.AsyncAnnotateFileRequest(
+    async_request = vision.AsyncAnnotateFileRequest(
         features=[feature], input_config=input_config,
         output_config=output_config, image_context=image_context)
 
@@ -63,34 +65,27 @@ def async_detect_document_tibetan(args):
     # List objects with the given prefix.
     get_file_number = lambda name: int(re.search(r'(\d+)\.json', name).group(1))
     blob_list = sorted([(get_file_number(blob.name), blob) for blob in bucket.list_blobs(prefix=path_book_name+"/")])
-    print('Output files:')
-    for _, blob in blob_list:
-        print(blob.name)
 
     output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 
     print('Collecting all text locally as {}'.format(output_name))
 
-    with open(output_name, "w") as f:
+    # We specify the utf-8 encoding here
+    # See https://stackoverflow.com/questions/27092833/unicodeencodeerror-charmap-codec-cant-encode-characters
+    with open(output_name, "w", encoding="utf-8") as f:
         # Collect all text from outputs
-        for i, output in blob_list:
+        for _, output in tqdm(blob_list):
             json_string = output.download_as_string()
+
+            # For the `._pb`, see https://stackoverflow.com/questions/64403737/attribute-error-descriptor-while-trying-to-convert-google-vision-response-to-dic
             response = json_format.Parse(
-                json_string, vision.types.AnnotateFileResponse())
+                json_string, vision.AnnotateFileResponse()._pb)
 
             # The actual response for the first page of the input file.
             first_page_response = response.responses[0]
             annotation = first_page_response.full_text_annotation
 
             f.write(annotation.text)
-
-            if i == 1:
-                # Here we print the full text from the first page.
-                # The response contains more information:
-                # annotation/pages/blocks/paragraphs/words/symbols
-                # including confidence scores and bounding boxes
-                print(u'Full text:\n{}'.format(
-                    annotation.text))
 
 if __name__ == "__main__":
     args = parser.parse_args()
