@@ -1,6 +1,8 @@
 import argparse
 import os
 
+from tqdm import tqdm
+
 from google.cloud import storage
 from google.cloud import vision
 
@@ -14,19 +16,19 @@ def detect_document_tibetan(args):
     """Detects text in all images in a folder located in Google Cloud Storage.
     """
     book_name = os.path.split(args.filepath)[-1]
+    folder_name = os.path.splitext(book_name)[0]
     
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(args.bucket)
-    blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=args.filepath+"/")])
+    blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=folder_name+"/")])
 
     outputs = []
 
-    for name in blob_list:
+    for name in tqdm(blob_list, desc="Running document text detection"):
         gcs_uri = "gs://" + args.bucket + "/" + name
-        print("Running document text detection on: {}".format(gcs_uri))
         client = vision.ImageAnnotatorClient()
-        image = vision.types.Image()
-        image_context = vision.types.ImageContext(language_hints=["bo"])
+        image = vision.Image()
+        image_context = vision.ImageContext(language_hints=["bo"])
         image.source.image_uri = gcs_uri
 
         response = client.document_text_detection(image=image, image_context=image_context)
@@ -36,9 +38,9 @@ def detect_document_tibetan(args):
     output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 
     print("Writing output file to: {}".format(output_name))
-    with open(output_name, "w") as f:
+    with open(output_name, "w", encoding="utf-8") as f:
         f.write("".join(outputs))
-        
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

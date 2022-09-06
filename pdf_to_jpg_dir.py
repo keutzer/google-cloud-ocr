@@ -3,8 +3,11 @@ import math
 import os
 import re
 import shutil
+from posixpath import join
 
-from pdf2image import convert_from_path
+from tqdm import tqdm
+
+from pdf2image_with_logging import convert_from_path
 from google.cloud import storage
 
 parser = argparse.ArgumentParser()
@@ -22,16 +25,17 @@ def convert_to_jpg(args):
     n = int(math.ceil(math.log(len(pages)) / math.log(10)))
 
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name=args.bucket)
+    bucket = storage_client.get_bucket(args.bucket)
 
-    for i, page in enumerate(pages):
+    gcs_dir = args.output_dir if args.output_dir else book_name
+
+    for i, page in tqdm(enumerate(pages), desc="Uploading", total=len(pages)):
         number_str = "_{num:0{width}}.jpg".format(num=i+1, width=n)
         output_name = os.path.join("tmp_pdf_to_jpg", book_name + number_str)
         page.save(output_name, 'JPEG')
 
-        gcs_dir = args.output_dir if args.output_dir else book_name
-        blob = bucket.blob(os.path.join(gcs_dir, book_name + number_str))
-        print("Uploading file to Google Cloud bucket: {}".format(output_name))
+        gcs_path = join(gcs_dir, book_name + number_str)
+        blob = bucket.blob(gcs_path)
         blob.upload_from_filename(output_name)
 
 
@@ -40,6 +44,7 @@ if __name__ == "__main__":
     os.mkdir("tmp_pdf_to_jpg")
     try:
         convert_to_jpg(args)
-    except:
-        pass
-    shutil.rmtree("tmp_pdf_to_jpg")
+    except Exception as e:
+        raise e
+    finally:
+        shutil.rmtree("tmp_pdf_to_jpg")
