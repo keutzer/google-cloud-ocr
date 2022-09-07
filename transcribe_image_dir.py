@@ -22,16 +22,24 @@ def detect_document_tibetan(args):
     bucket = storage_client.get_bucket(args.bucket)
     blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=folder_name+"/")])
 
-    outputs = []
+    # Setup calls to transcription
+    client = vision.ImageAnnotatorClient()
+    image_context = vision.ImageContext(language_hints=["bo"])
+    feature = vision.Feature(
+        type=vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
+        model="builtin/weekly")
 
+    outputs = []
     for name in tqdm(blob_list, desc="Running document text detection"):
         gcs_uri = "gs://" + args.bucket + "/" + name
-        client = vision.ImageAnnotatorClient()
         image = vision.Image()
-        image_context = vision.ImageContext(language_hints=["bo"])
         image.source.image_uri = gcs_uri
 
-        response = client.document_text_detection(image=image, image_context=image_context)
+        annotate_image_request = vision.AnnotateImageRequest(
+            image=image, image_context=image_context, features=[feature]
+        )
+
+        response = client.annotate_image(annotate_image_request)
         text = response.full_text_annotation.text
         outputs.append(text)
 
