@@ -1,6 +1,8 @@
 import argparse
 import os
 
+from tqdm import trange
+
 from google.cloud import storage
 from google.cloud import vision
 
@@ -14,31 +16,47 @@ def detect_document_tibetan(args):
     """Detects text in all images in a folder located in Google Cloud Storage.
     """
     book_name = os.path.split(args.filepath)[-1]
-    
+    folder_name = os.path.splitext(book_name)[0]
+
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(args.bucket)
-    blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=args.filepath+"/")])
+    blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=folder_name+"/")])
 
-    outputs = []
+    # Setup calls to transcription
+    client = vision.ImageAnnotatorClient()
+    image_context = vision.ImageContext(language_hints=["bo"])
+    feature = vision.Feature(
+        type=vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
+        model="builtin/weekly")
 
-    for name in blob_list:
+    def create_annotate_image_request(name: str) -> vision.AnnotateImageRequest:
+        # Build Image URI in GCS
         gcs_uri = "gs://" + args.bucket + "/" + name
-        print("Running document text detection on: {}".format(gcs_uri))
-        client = vision.ImageAnnotatorClient()
-        image = vision.types.Image()
-        image_context = vision.types.ImageContext(language_hints=["bo"])
+        image = vision.Image()
         image.source.image_uri = gcs_uri
 
-        response = client.document_text_detection(image=image, image_context=image_context)
-        text = response.full_text_annotation.text
-        outputs.append(text)
+        # Create image annotation request
+        annotate_image_request = vision.AnnotateImageRequest(
+            image=image, image_context=image_context, features=[feature]
+        )
+
+        return annotate_image_request
+
+    annotate_image_requests = list(map(create_annotate_image_request, blob_list))
+
+    batch_size = 10
+    outputs = []
+    for i in trange(0, len(annotate_image_requests), batch_size, desc="Running document text detection"):
+        batch_annotate_image_requests = annotate_image_requests[i: i+batch_size]
+        response = client.batch_annotate_images(requests=batch_annotate_image_requests)
+        outputs.extend([r.full_text_annotation.text for r in response.responses])
 
     output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 
     print("Writing output file to: {}".format(output_name))
-    with open(output_name, "w") as f:
+    with open(output_name, "w", encoding="utf-8") as f:
         f.write("".join(outputs))
-        
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
