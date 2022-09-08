@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from tqdm import tqdm
+from tqdm import trange
 
 from google.cloud import storage
 from google.cloud import vision
@@ -17,7 +17,7 @@ def detect_document_tibetan(args):
     """
     book_name = os.path.split(args.filepath)[-1]
     folder_name = os.path.splitext(book_name)[0]
-    
+
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(args.bucket)
     blob_list = sorted([blob.name for blob in bucket.list_blobs(prefix=folder_name+"/")])
@@ -29,19 +29,27 @@ def detect_document_tibetan(args):
         type=vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
         model="builtin/weekly")
 
-    outputs = []
-    for name in tqdm(blob_list, desc="Running document text detection"):
+    def create_annotate_image_request(name: str) -> vision.AnnotateImageRequest:
+        # Build Image URI in GCS
         gcs_uri = "gs://" + args.bucket + "/" + name
         image = vision.Image()
         image.source.image_uri = gcs_uri
 
+        # Create image annotation request
         annotate_image_request = vision.AnnotateImageRequest(
             image=image, image_context=image_context, features=[feature]
         )
 
-        response = client.annotate_image(annotate_image_request)
-        text = response.full_text_annotation.text
-        outputs.append(text)
+        return annotate_image_request
+
+    annotate_image_requests = list(map(create_annotate_image_request, blob_list))
+
+    batch_size = 10
+    outputs = []
+    for i in trange(0, len(annotate_image_requests), batch_size, desc="Running document text detection"):
+        batch_annotate_image_requests = annotate_image_requests[i: i+batch_size]
+        response = client.batch_annotate_images(requests=batch_annotate_image_requests)
+        outputs.extend([r.full_text_annotation.text for r in response.responses])
 
     output_name = os.path.join(args.output_dir, book_name+".txt") if args.output_dir else book_name+".txt"
 

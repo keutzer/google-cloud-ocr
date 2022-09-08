@@ -17,6 +17,8 @@ from PIL import Image
 
 from itertools import chain
 
+from tqdm import tqdm
+
 from pdf2image.generators import uuid_generator, counter_generator, ThreadSafeGenerator
 
 from pdf2image.parsers import (
@@ -174,9 +176,9 @@ def convert_from_path(
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-    def process_single_page(
-        current_page: int, thread_output_file: str
-    ) -> List:
+    # START faster multiprocessing code
+
+    def process_single_page(current_page: int, thread_output_file: str) -> List:
         uid = thread_output_file
 
         # Build the command accordingly
@@ -205,7 +207,7 @@ def convert_from_path(
             args = [_get_command_path("pdftoppm", poppler_path)] + args
 
         proc = Popen(args, env=env, stdout=PIPE, stderr=PIPE, startupinfo=startupinfo)
-        
+
         try:
             data, err = proc.communicate(timeout=timeout)
         except TimeoutExpired:
@@ -223,16 +225,27 @@ def convert_from_path(
         else:
             current_images = parse_buffer_func(data)
 
-        if current_page % 10 == 0:
-            print(f"Finished page {current_page} / {page_count}")
-
         return current_images
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-        page_numbers = range(first_page, first_page + page_count)
-        results = executor.map(process_single_page, page_numbers, output_file)
+    page_numbers = list(range(first_page, first_page + page_count))
 
-    images = list(chain.from_iterable(results))
+    pbar = tqdm(total=page_count, desc="Converting pdf document to jpg images")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+        futures = dict()
+        for page_number, thread_output_file in zip(page_numbers, output_file):
+            future = executor.submit(process_single_page, page_number, thread_output_file)
+            futures[future] = page_number
+
+        nested_images_by_page_number = {}
+        for future in concurrent.futures.as_completed(futures):
+            page_number = futures[future]
+            nested_images_by_page_number[page_number] = future.result()
+            pbar.update(1)
+    pbar.close()
+
+    images = list(chain.from_iterable([nested_images_by_page_number[i] for i in page_numbers]))
+
+    # END faster multiprocessing code
 
     if auto_temp_dir:
         shutil.rmtree(output_folder)

@@ -1,7 +1,6 @@
 import argparse
 import math
 import os
-import re
 import shutil
 from posixpath import join
 
@@ -20,23 +19,24 @@ def convert_to_jpg(args):
     print("Converting file {} to jpg".format(args.filepath))
     path_book_name = os.path.splitext(args.filepath)[0]
     book_name = os.path.split(path_book_name)[-1]
-    pages = convert_from_path(args.filepath, 500)   
 
-    n = int(math.ceil(math.log(len(pages)) / math.log(10)))
+    page_paths = convert_from_path(
+        args.filepath, 500, output_folder="tmp_pdf_to_jpg", fmt="jpg", paths_only=True
+    )
+
+    n = int(math.ceil(math.log(len(page_paths)) / math.log(10)))
 
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(args.bucket)
 
     gcs_dir = args.output_dir if args.output_dir else book_name
 
-    for i, page in tqdm(enumerate(pages), desc="Uploading", total=len(pages)):
+    for i, page_path in tqdm(enumerate(page_paths), desc="Uploading", total=len(page_paths)):
         number_str = "_{num:0{width}}.jpg".format(num=i+1, width=n)
-        output_name = os.path.join("tmp_pdf_to_jpg", book_name + number_str)
-        page.save(output_name, 'JPEG')
 
         gcs_path = join(gcs_dir, book_name + number_str)
         blob = bucket.blob(gcs_path)
-        blob.upload_from_filename(output_name)
+        blob.upload_from_filename(page_path)
 
 
 if __name__ == "__main__":
