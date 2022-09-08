@@ -82,7 +82,6 @@ In either of these scripts, you can optionally specify an output directory for t
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials
 
-pip install -r requirements.txt --upgrade
 ./transcribe.sh
 ```
 
